@@ -35,7 +35,7 @@
     <description>Implementation of Apache Sling Discovery based on Sling Resource providing a ClusterView through resource-clustering (eg jackrabbit clustering) and a TopologyView through HTTP POST heartbeats announcing sub-topologies to each other.</description>
 
     <scm>
-        <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-discovery-impl.git</conncetion>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-discovery-impl.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-discovery-impl.git</developerConnection>
         <url>https://gitbox.apache.org/repos/asf?p=sling-org-apache-sling-discovery-impl.git</url>
     </scm>
