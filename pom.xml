@@ -76,6 +76,10 @@
 		            <Embed-Dependency>
 		              commons-net;inline=org/apache/commons/net/util/SubnetUtils*
 		            </Embed-Dependency>
+                <!-- remove when upgrading to bnd Maven plugin -->
+                <Provide-Capability><![CDATA[
+                  osgi.service;objectClass:List<String>="org.apache.sling.discovery.impl.Config,org.apache.sling.discovery.base.connectors.BaseConfig,org.apache.sling.discovery.commons.providers.spi.base.DiscoveryLiteConfig"
+                ]]></Provide-Capability>
 		          </instructions>
 		        </configuration>
             </plugin>
