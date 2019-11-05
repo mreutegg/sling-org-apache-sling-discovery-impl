@@ -388,7 +388,7 @@ public class VotingView extends View {
                         }
                     } else if (v instanceof Boolean) {
                         Boolean b = (Boolean)v;
-                        if (b == vote) {
+                        if (b.equals(vote)) {
                             logger.debug("vote: already voted, with same vote ("+vote+"), not voting again");
                             shouldVote = false;
                         }
