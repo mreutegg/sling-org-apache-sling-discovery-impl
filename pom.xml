@@ -127,7 +127,7 @@
                       on AEM 5.6.1 - thus switching back to 2.5.3 here:
 					javax.servlet,version=[2.6,3) - - Cannot be resolved
 					javax.servlet.http,version=[2.6,3) - - Cannot be resolved
-                       -->
+                -->
                 <version>2.5.3</version>
                 <extensions>true</extensions>
                 <configuration>
