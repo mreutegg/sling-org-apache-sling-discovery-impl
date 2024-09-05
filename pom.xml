@@ -41,7 +41,7 @@
     </scm>
 
     <properties>
-      <jackrabbit.version>2.14.3</jackrabbit.version>
+      <jackrabbit.version>2.20.16</jackrabbit.version>
         <!-- by default Slow tests are excluded - use -PincludeSlowTests to include them -->
         <sling.excluded.surefire.groups>org.apache.sling.commons.testing.junit.categories.Slow</sling.excluded.surefire.groups>
         <!--
@@ -59,6 +59,11 @@
 
     <build>
         <plugins>
+            <!--
+                START workarounds for Java 11+
+                Can be removed after upgrading to a recent Sling parent pom.
+                See also SLING-12419.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -70,6 +75,37 @@
                     </execution>
                 </executions>
             </plugin>
+            <!--
+                ianal-maven-plugin does not work with Java 11+,
+                but tools-maven-plugin does.
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>ianal-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.geronimo.genesis.plugins</groupId>
+                <artifactId>tools-maven-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <id>verify-legal-files</id>
+                        <goals>
+                            <goal>verify-legal-files</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Fail the build if any artifacts are missing legal files -->
+                            <strict>true</strict>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- END workarounds for Java 11+ -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                  <artifactId>maven-surefire-plugin</artifactId>
@@ -155,8 +191,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.apache.jackrabbit</groupId>
-			<artifactId>jackrabbit-api</artifactId>
-			<version>${jackrabbit.version}</version>
+			<artifactId>oak-jackrabbit-api</artifactId>
+			<version>1.48.0</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -301,8 +337,9 @@
             </exclusions>
         </dependency>
         <!--
-            Use the following two Jackrabbit modules at 2.14.3
-            or higher to make build work on Java 9+ (JCR-4179)
+            Use the following Jackrabbit modules at 2.20.16
+            or higher to make build work on Java 9+.
+            See JCR-4179 and JCR-4278.
         -->
         <dependency>
             <groupId>org.apache.jackrabbit</groupId>
@@ -314,6 +351,19 @@
             <groupId>org.apache.jackrabbit</groupId>
             <artifactId>jackrabbit-spi-commons</artifactId>
             <version>${jackrabbit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>jackrabbit-core</artifactId>
+            <version>${jackrabbit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Tests use persistence on derby -->
+        <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derby</artifactId>
+            <version>10.14.2.0</version>
             <scope>test</scope>
         </dependency>
 
