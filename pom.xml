@@ -41,13 +41,35 @@
     </scm>
 
     <properties>
-      <jackrabbit.version>2.12.2</jackrabbit.version>
+      <jackrabbit.version>2.14.3</jackrabbit.version>
         <!-- by default Slow tests are excluded - use -PincludeSlowTests to include them -->
         <sling.excluded.surefire.groups>org.apache.sling.commons.testing.junit.categories.Slow</sling.excluded.surefire.groups>
+        <!--
+            Explicitly set bundle required execution environment and
+            disable set-bundle-required-execution-environment execution
+            of maven-antrun-plugin. Allows building with Java 11.
+            Can be removed after upgrading to a recent Sling parent pom.
+            See also SLING-12419.
+        -->
+        <sling.java.version>8</sling.java.version>
+        <sling.bree>JavaSE-1.8</sling.bree>
+        <animal.sniffer.skip>true</animal.sniffer.skip>
+        <sling.animalSignatures.version>6</sling.animalSignatures.version>
     </properties>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!-- disable and explicitly set properties (SLING-12419) -->
+                        <id>set-bundle-required-execution-environment</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                  <artifactId>maven-surefire-plugin</artifactId>
@@ -278,7 +300,23 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        
+        <!--
+            Use the following two Jackrabbit modules at 2.14.3
+            or higher to make build work on Java 9+ (JCR-4179)
+        -->
+        <dependency>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>jackrabbit-jcr-commons</artifactId>
+            <version>${jackrabbit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jackrabbit</groupId>
+            <artifactId>jackrabbit-spi-commons</artifactId>
+            <version>${jackrabbit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- using log4j under slf4j to allow fine-grained logging config (see src/test/resources/log4j.properties) -->
         <dependency>
         	<groupId>org.slf4j</groupId>
