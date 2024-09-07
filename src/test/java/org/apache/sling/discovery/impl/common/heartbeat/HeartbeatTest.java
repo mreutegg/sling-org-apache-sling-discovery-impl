@@ -32,8 +32,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import javax.jcr.Property;
-
 import org.apache.log4j.Level;
 import org.apache.log4j.spi.RootLogger;
 import org.apache.sling.api.resource.ModifiableValueMap;
@@ -684,13 +682,13 @@ public class HeartbeatTest {
                 assertTrue(ongoingVote.hasVotedYes(slowMachine2.getSlingId()));
                 final Resource memberResource = ongoingVote.getResource().getChild("members").getChild(slowMachine2.getSlingId());
                 final ModifiableValueMap memberMap = memberResource.adaptTo(ModifiableValueMap.class);
-                Property vote = (Property) memberMap.get("vote");
-                assertEquals(Boolean.TRUE, vote.getBoolean());
-                Property votedAt = (Property) memberMap.get("votedAt");
+                Boolean vote = (Boolean) memberMap.get("vote");
+                assertEquals(Boolean.TRUE, vote);
+                Calendar votedAt = (Calendar) memberMap.get("votedAt");
                 if (previousVotedAt==null) {
-                    previousVotedAt = votedAt.getDate();
+                    previousVotedAt = votedAt;
                 } else {
-                    assertEquals(previousVotedAt, votedAt.getDate());
+                    assertEquals(previousVotedAt, votedAt);
                 }
             } catch(Exception e) {
                 resourceResolver.close();
