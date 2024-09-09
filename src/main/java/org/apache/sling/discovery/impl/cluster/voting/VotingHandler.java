@@ -29,11 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.api.SlingConstants;
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.ModifiableValueMap;
@@ -49,6 +44,10 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -59,8 +58,7 @@ import org.slf4j.LoggerFactory;
  * The osgi event handler responsible for following any votings and vote
  * accordingly
  */
-@Component(immediate = true)
-@Service(value = {VotingHandler.class})
+@Component(immediate = true, service = {VotingHandler.class})
 public class VotingHandler implements EventHandler {
 
     public static enum VotingDetail {

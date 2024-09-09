@@ -27,11 +27,6 @@ import java.util.UUID;
 
 import javax.jcr.Session;
 
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.apache.felix.scr.annotations.ReferencePolicy;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.PersistenceException;
@@ -54,7 +49,8 @@ import org.apache.sling.discovery.impl.common.View;
 import org.apache.sling.discovery.impl.common.ViewHelper;
 import org.apache.sling.settings.SlingSettingsService;
 import org.osgi.framework.BundleException;
-import org.osgi.service.http.HttpService;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The heartbeat handler is responsible and capable of issuing both local and
@@ -63,11 +59,7 @@ import org.osgi.service.http.HttpService;
  * Local heartbeats are stored in the repository. Remote heartbeats are POSTs to
  * remote TopologyConnectorServlets.
  */
-@Component
-@Service(value = HeartbeatHandler.class)
-@Reference(referenceInterface=HttpService.class,
-           cardinality=ReferenceCardinality.OPTIONAL_MULTIPLE,
-           policy=ReferencePolicy.DYNAMIC)
+@Component(service = {HeartbeatHandler.class})
 public class HeartbeatHandler extends BaseViewChecker {
 
     private static final String PROPERTY_ID_LAST_HEARTBEAT = "lastHeartbeat";
