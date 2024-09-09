@@ -18,7 +18,8 @@
  */
 package org.apache.sling.discovery.impl.setup;
 
-import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.jcr.RepositoryException;
@@ -87,7 +88,7 @@ class VotingEventListener implements EventListener {
         try {
             while (!stopped && events.hasNext()) {
                 Event event = events.nextEvent();
-                Properties properties = new Properties();
+                Map<String, String> properties = new HashMap<>();
                 String topic;
                 if (event.getType() == Event.NODE_ADDED) {
                     topic = SlingConstants.TOPIC_RESOURCE_ADDED;

@@ -1,0 +1,3 @@
+Import-Package:\
+    org.apache.felix.webconsole;resolution:=optional,\
+    *

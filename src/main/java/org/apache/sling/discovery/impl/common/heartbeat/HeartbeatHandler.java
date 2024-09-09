@@ -27,11 +27,6 @@ import java.util.UUID;
 
 import javax.jcr.Session;
 
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.apache.felix.scr.annotations.ReferencePolicy;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.PersistenceException;
@@ -54,6 +49,11 @@ import org.apache.sling.discovery.impl.common.View;
 import org.apache.sling.discovery.impl.common.ViewHelper;
 import org.apache.sling.settings.SlingSettingsService;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.http.HttpService;
 
 /**
@@ -63,11 +63,17 @@ import org.osgi.service.http.HttpService;
  * Local heartbeats are stored in the repository. Remote heartbeats are POSTs to
  * remote TopologyConnectorServlets.
  */
-@Component
-@Service(value = HeartbeatHandler.class)
-@Reference(referenceInterface=HttpService.class,
-           cardinality=ReferenceCardinality.OPTIONAL_MULTIPLE,
-           policy=ReferencePolicy.DYNAMIC)
+@Component(service = {HeartbeatHandler.class},
+        reference = {
+                @Reference(name = "HttpService",
+                        service = HttpService.class,
+                        cardinality = ReferenceCardinality.MULTIPLE,
+                        policy = ReferencePolicy.DYNAMIC,
+                        bind = "bindHttpService",
+                        unbind = "unbindHttpService"
+                )
+        }
+)
 public class HeartbeatHandler extends BaseViewChecker {
 
     private static final String PROPERTY_ID_LAST_HEARTBEAT = "lastHeartbeat";
@@ -185,6 +191,13 @@ public class HeartbeatHandler extends BaseViewChecker {
         lastHeartbeatWritten = null;
 
         logger.info("doActivate: activated with runtimeId: {}, slingId: {}", runtimeId, slingId);
+    }
+
+    @Override
+    protected void unbindHttpService(ServiceReference reference) {
+        // override super.unbindHttpService, otherwise bnd plugin
+        // complains about missing unbind method
+        super.unbindHttpService(reference);
     }
 
     @Override

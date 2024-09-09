@@ -34,13 +34,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.apache.felix.scr.annotations.ReferencePolicy;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.PersistenceException;
@@ -77,6 +70,12 @@ import org.apache.sling.settings.SlingSettingsService;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,11 +84,10 @@ import org.slf4j.LoggerFactory;
  * implementation for detecting changes in a cluster and only supports one
  * cluster (of which this instance is part of).
  */
-@Component(immediate = true)
-@Service(value = { DiscoveryService.class, DiscoveryServiceImpl.class })
+@Component(immediate = true, service = { DiscoveryService.class, DiscoveryServiceImpl.class })
 public class DiscoveryServiceImpl extends BaseDiscoveryService {
 
-    private final static Logger logger = LoggerFactory.getLogger(DiscoveryServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(DiscoveryServiceImpl.class);
 
     /**
      * This ClusterSyncService just 'passes the call through', ie it doesn't actually
@@ -113,14 +111,10 @@ public class DiscoveryServiceImpl extends BaseDiscoveryService {
     @Reference
     private SlingSettingsService settingsService;
 
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL_MULTIPLE, policy = ReferencePolicy.DYNAMIC, referenceInterface = TopologyEventListener.class)
-    private TopologyEventListener[] eventListeners = new TopologyEventListener[0];
-
     /**
      * All property providers.
      */
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL_MULTIPLE, policy = ReferencePolicy.DYNAMIC, referenceInterface = PropertyProvider.class, updated = "updatedPropertyProvider")
-    private List<ProviderInfo> providerInfos = new ArrayList<ProviderInfo>();
+    private final List<ProviderInfo> providerInfos = new ArrayList<>();
 
     /** lock object used for synching bind/unbind and topology event sending **/
     private final Object lock = new Object();
@@ -166,7 +160,7 @@ public class DiscoveryServiceImpl extends BaseDiscoveryService {
 
     private final List<TopologyEventListener> pendingListeners = new LinkedList<TopologyEventListener>();
 
-    private TopologyEventListener changePropagationListener = new TopologyEventListener() {
+    private final TopologyEventListener changePropagationListener = new TopologyEventListener() {
 
         @Override
         public void handleTopologyEvent(TopologyEvent event) {
@@ -389,6 +383,11 @@ public class DiscoveryServiceImpl extends BaseDiscoveryService {
     /**
      * bind a topology event listener
      */
+    @Reference(name = "eventListeners",
+            service = TopologyEventListener.class,
+            cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC,
+            bind = "bindTopologyEventListener", unbind = "unbindTopologyEventListener")
     protected void bindTopologyEventListener(final TopologyEventListener eventListener) {
         viewStateManagerLock.lock();
         try{
@@ -425,6 +424,11 @@ public class DiscoveryServiceImpl extends BaseDiscoveryService {
     /**
      * Bind a new property provider.
      */
+    @Reference(name = "providerInfos",
+            service = PropertyProvider.class,
+            cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC,
+            bind = "bindPropertyProvider", unbind = "unbindPropertyProvider", updated = "updatedPropertyProvider")
     protected void bindPropertyProvider(final PropertyProvider propertyProvider,
                                         final Map<String, Object> props) {
         logger.debug("bindPropertyProvider: Binding PropertyProvider {}",

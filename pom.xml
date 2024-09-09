@@ -22,13 +22,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.apache.sling</groupId>
-        <artifactId>sling</artifactId>
-        <version>26</version>
+        <artifactId>sling-bundle-parent</artifactId>
+        <version>52</version>
         <relativePath />
     </parent>
 
     <artifactId>org.apache.sling.discovery.impl</artifactId>
-    <packaging>bundle</packaging>
     <version>1.2.13-SNAPSHOT</version>
 
     <name>Apache Sling Resource-Based Discovery Service</name>
@@ -41,80 +40,13 @@
     </scm>
 
     <properties>
-      <jackrabbit.version>2.20.16</jackrabbit.version>
+        <jackrabbit.version>2.20.16</jackrabbit.version>
         <!-- by default Slow tests are excluded - use -PincludeSlowTests to include them -->
         <sling.excluded.surefire.groups>org.apache.sling.commons.testing.junit.categories.Slow</sling.excluded.surefire.groups>
-        <!--
-            Explicitly set bundle required execution environment and
-            disable set-bundle-required-execution-environment execution
-            of maven-antrun-plugin. Allows building with Java 11.
-            Can be removed after upgrading to a recent Sling parent pom.
-            See also SLING-12419.
-        -->
-        <sling.java.version>8</sling.java.version>
-        <sling.bree>JavaSE-1.8</sling.bree>
-        <animal.sniffer.skip>true</animal.sniffer.skip>
-        <sling.animalSignatures.version>6</sling.animalSignatures.version>
     </properties>
 
     <build>
         <plugins>
-            <!--
-                START workarounds for Java 11+
-                Can be removed after upgrading to a recent Sling parent pom.
-                See also SLING-12419.
-            -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <!-- disable and explicitly set properties (SLING-12419) -->
-                        <id>set-bundle-required-execution-environment</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <!--
-                ianal-maven-plugin does not work with Java 11+,
-                but tools-maven-plugin does.
-            -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>ianal-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.geronimo.genesis.plugins</groupId>
-                <artifactId>tools-maven-plugin</artifactId>
-                <version>1.4</version>
-                <executions>
-                    <execution>
-                        <id>verify-legal-files</id>
-                        <goals>
-                            <goal>verify-legal-files</goal>
-                        </goals>
-                        <configuration>
-                            <!-- Fail the build if any artifacts are missing legal files -->
-                            <strict>true</strict>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- END workarounds for Java 11+ -->
-            <!--
-                Use recent maven-bundle-plugin for Java 21 build on Windows.
-                Can be removed after upgrading to a recent Sling parent pom.
-            -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.3.1</version>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                  <artifactId>maven-surefire-plugin</artifactId>
@@ -123,33 +55,6 @@
                     <argLine>-Xmx2048m</argLine>
                     <excludedGroups>${sling.excluded.surefire.groups}</excludedGroups>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-scr-plugin</artifactId>
-                <version>1.26.4</version>        
-            </plugin>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <!--  with 3.0.0 the following bundle dependency is failing
-                      on AEM 5.6.1 - thus switching back to 2.5.3 here:
-					javax.servlet,version=[2.6,3) - - Cannot be resolved
-					javax.servlet.http,version=[2.6,3) - - Cannot be resolved
-                -->
-                <version>2.5.3</version>
-                <extensions>true</extensions>
-                <configuration>
-                  <instructions>
-		            <Embed-Dependency>
-		              commons-net;inline=org/apache/commons/net/util/SubnetUtils*
-		            </Embed-Dependency>
-                <!-- remove when upgrading to bnd Maven plugin -->
-                <Provide-Capability><![CDATA[
-                  osgi.service;objectClass:List<String>="org.apache.sling.discovery.impl.Config,org.apache.sling.discovery.base.connectors.BaseConfig,org.apache.sling.discovery.commons.providers.spi.base.DiscoveryLiteConfig"
-                ]]></Provide-Capability>
-		          </instructions>
-		        </configuration>
             </plugin>
         </plugins>
     </build>
@@ -166,25 +71,40 @@
     </profiles>
     <dependencies>
         <dependency>
-            <groupId>org.apache.felix</groupId>
-            <artifactId>org.apache.felix.scr.annotations</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>biz.aQute</groupId>
-            <artifactId>bndlib</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
 	        <version>1.6.1</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.core</artifactId>
+            <artifactId>org.osgi.service.component.annotations</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.compendium</artifactId>
+            <artifactId>org.osgi.service.metatype.annotations</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.framework</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.service.event</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.service.component</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.service.http</artifactId>
+            <scope>provided</scope>
         </dependency>
 		<dependency>
 			<groupId>org.apache.sling</groupId>
@@ -199,15 +119,9 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.jackrabbit</groupId>
-			<artifactId>oak-jackrabbit-api</artifactId>
-			<version>1.48.0</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.sling</groupId>
 			<artifactId>org.apache.sling.commons.osgi</artifactId>
-			<version>2.1.0</version>
+			<version>2.4.2</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -254,16 +168,10 @@
             <scope>test</scope>
             <type>test-jar</type>
         </dependency>
-        <dependency>
-            <groupId>org.apache.sling</groupId>
-            <artifactId>org.apache.sling.commons.johnzon</artifactId>
-            <version>1.0.0</version>
-            <scope>test</scope>
-        </dependency>
 		<dependency>
 			<groupId>org.apache.sling</groupId>
 			<artifactId>org.apache.sling.api</artifactId>
-			<version>2.5.0</version>
+			<version>2.7.0</version>
             <scope>provided</scope>
 		</dependency>
         <dependency>
@@ -286,45 +194,19 @@
 	    </dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
-			<artifactId>servlet-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient-osgi</artifactId>
-			<version>4.3.5</version>
-			<scope>provided</scope>
-		</dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.4</version>
+			<artifactId>javax.servlet-api</artifactId>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-net</groupId>
-            <artifactId>commons-net</artifactId>
-            <version>3.3</version>
-            <scope>provided</scope>
-        </dependency>
+		</dependency>
       <!-- Testing -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit-addons</groupId>
             <artifactId>junit-addons</artifactId>
             <version>1.4</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jmock</groupId>
-            <artifactId>jmock-junit4</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.9.5</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -375,6 +257,12 @@
             <version>10.14.2.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
+            <scope>test</scope>
+        </dependency>
 
         <!-- using log4j under slf4j to allow fine-grained logging config (see src/test/resources/log4j.properties) -->
         <dependency>
@@ -409,8 +297,8 @@
         </dependency>
         <dependency>
             <groupId>org.apache.sling</groupId>
-            <artifactId>org.apache.sling.testing.sling-mock</artifactId>
-            <version>1.2.0</version>
+            <artifactId>org.apache.sling.testing.sling-mock.junit4</artifactId>
+            <version>3.5.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
