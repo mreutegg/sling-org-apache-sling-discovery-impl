@@ -44,7 +44,10 @@ import org.slf4j.LoggerFactory;
  * osgi event handler which takes note when the established view changes in the
  * repository - or when an announcement changed in one of the instances
  */
-@Component(immediate = true)
+@Component(
+        enabled = false, // enabled by Config component
+        immediate = true
+)
 public class ClusterViewChangeListener implements EventHandler {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());

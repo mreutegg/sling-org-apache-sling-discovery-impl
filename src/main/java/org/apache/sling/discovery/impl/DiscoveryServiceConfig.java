@@ -135,4 +135,9 @@ public @interface DiscoveryServiceConfig {
     @AttributeDefinition(name = "%useSyncTokenServiceEnabled.name", description = "%useSyncTokenServiceEnabled.description")
     boolean useSyncTokenServiceEnabled() default true;
 
+    /**
+     * Whether this discovery service implementation is enabled.
+     */
+    @AttributeDefinition(name = "%enabled.name", description = "%enabled.description")
+    boolean enabled() default true;
 }

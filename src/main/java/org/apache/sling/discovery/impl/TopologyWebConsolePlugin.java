@@ -72,6 +72,7 @@ import static org.apache.felix.webconsole.WebConsoleConstants.PLUGIN_TITLE;
  * discovery service
  */
 @Component(
+        enabled = false, // enabled by Config component
         service = { TopologyEventListener.class, Servlet.class },
         property = {
                 PLUGIN_LABEL + "=" + TopologyWebConsolePlugin.LABEL,

@@ -19,6 +19,7 @@
 package org.apache.sling.discovery.impl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
@@ -28,11 +29,20 @@ import org.apache.sling.discovery.base.its.setup.VirtualInstanceBuilder;
 import org.apache.sling.discovery.commons.providers.base.DummyListener;
 import org.apache.sling.discovery.impl.common.heartbeat.HeartbeatHandler;
 import org.apache.sling.discovery.impl.setup.FullJR2VirtualInstanceBuilder;
+import org.apache.sling.testing.mock.osgi.MockOsgi;
+import org.apache.sling.testing.mock.osgi.junit.OsgiContext;
+import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class DiscoveryServiceImplTest extends AbstractDiscoveryServiceTest {
+
+    @Rule
+    public final OsgiContext context = new OsgiContext();
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -112,5 +122,15 @@ public class DiscoveryServiceImplTest extends AbstractDiscoveryServiceTest {
         logger.info("testLocalClusterSyncTokenIdChange: now we should have gotten a CHANGING/CHANGED pair additionally...");
         assertEquals(0, discoveryService.getViewStateManager().waitForAsyncEvents(2000));
         assertEquals(3, listener.countEvents());
+    }
+
+    @Test
+    public void testNotEnabled() {
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("enabled", false);
+        MockOsgi.setConfigForPid(context.bundleContext(), Config.class.getName(), properties);
+        Config config = new Config();
+        MockOsgi.activate(config, context.bundleContext());
+        assertFalse(config.isEnabled());
     }
 }

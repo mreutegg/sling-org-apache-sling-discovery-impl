@@ -64,6 +64,7 @@ import org.osgi.service.http.HttpService;
  * remote TopologyConnectorServlets.
  */
 @Component(service = {HeartbeatHandler.class},
+        enabled = false, // enabled by Config component
         reference = {
                 @Reference(name = "HttpService",
                         service = HttpService.class,

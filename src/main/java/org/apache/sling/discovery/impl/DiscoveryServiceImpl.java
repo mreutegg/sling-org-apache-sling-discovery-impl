@@ -84,7 +84,11 @@ import org.slf4j.LoggerFactory;
  * implementation for detecting changes in a cluster and only supports one
  * cluster (of which this instance is part of).
  */
-@Component(immediate = true, service = { DiscoveryService.class, DiscoveryServiceImpl.class })
+@Component(
+        enabled = false, // enabled by Config component
+        immediate = true,
+        service = { DiscoveryService.class, DiscoveryServiceImpl.class }
+)
 public class DiscoveryServiceImpl extends BaseDiscoveryService {
 
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryServiceImpl.class);

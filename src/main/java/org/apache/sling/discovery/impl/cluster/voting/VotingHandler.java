@@ -58,7 +58,11 @@ import org.slf4j.LoggerFactory;
  * The osgi event handler responsible for following any votings and vote
  * accordingly
  */
-@Component(immediate = true, service = {VotingHandler.class})
+@Component(
+        enabled = false, // enabled by Config component
+        immediate = true,
+        service = {VotingHandler.class}
+)
 public class VotingHandler implements EventHandler {
 
     public static enum VotingDetail {

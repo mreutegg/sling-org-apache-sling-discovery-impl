@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.discovery.base.connectors.BaseConfig;
 import org.apache.sling.discovery.commons.providers.spi.base.DiscoveryLiteConfig;
+import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.metatype.annotations.Designate;
@@ -48,7 +49,7 @@ import static org.apache.sling.discovery.impl.DiscoveryServiceConfig.DEFAULT_TOP
  * <p>
  * The properties are described below under.
  */
-@Component(service = { Config.class, BaseConfig.class, DiscoveryLiteConfig.class })
+@Component(immediate = true, service = { Config.class, BaseConfig.class, DiscoveryLiteConfig.class })
 @Designate(ocd = DiscoveryServiceConfig.class)
 public class Config implements BaseConfig, DiscoveryLiteConfig {
 
@@ -122,14 +123,30 @@ public class Config implements BaseConfig, DiscoveryLiteConfig {
      * then it is used.
      */
     private boolean useSyncTokenService = true;
-    
+
+    /**
+     * true when discovery.impl is enabled
+     */
+    private boolean enabled = true;
+
     @Activate
-    protected void activate(final DiscoveryServiceConfig config) {
+    protected void activate(final DiscoveryServiceConfig config,
+                            final ComponentContext context) {
 		logger.debug("activate: config activated.");
-        configure(config);
+        configure(config, context);
     }
 
-    protected void configure(final DiscoveryServiceConfig config) {
+    protected void configure(final DiscoveryServiceConfig config,
+                             final ComponentContext context) {
+        this.enabled = config.enabled();
+        logger.debug("configure: enabled='{}'", this.enabled);
+        if (this.enabled) {
+            // enable all components in this bundle
+            context.enableComponent(null);
+        } else {
+            logger.info("configure: discovery.impl service is disabled.");
+        }
+
         this.heartbeatTimeout = config.heartbeatTimeout();
         logger.debug("configure: heartbeatTimeout='{}'", this.heartbeatTimeout);
 
@@ -456,6 +473,10 @@ public class Config implements BaseConfig, DiscoveryLiteConfig {
 
     public boolean useSyncTokenService() {
         return useSyncTokenService;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 
 }

@@ -42,7 +42,10 @@ import org.slf4j.LoggerFactory;
  * This class is a reader only - it accesses the repository to read the
  * currently established view
  */
-@Component(service = {ClusterViewService.class, ClusterViewServiceImpl.class})
+@Component(
+        enabled = false, // enabled by Config component
+        service = {ClusterViewService.class, ClusterViewServiceImpl.class}
+)
 public class ClusterViewServiceImpl implements ClusterViewService {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
