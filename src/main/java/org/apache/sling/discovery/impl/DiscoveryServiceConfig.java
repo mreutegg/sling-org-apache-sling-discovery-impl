@@ -132,7 +132,7 @@ public @interface DiscoveryServiceConfig {
      * when set to true and the syncTokenService (of discovery.commons) is available,
      * then it is used
      */
-    @AttributeDefinition(name = "%useSyncTokenServiceEnabled.name", description = "%useSyncTokenServiceEnabled.description")
-    boolean useSyncTokenServiceEnabled() default true;
+    @AttributeDefinition(name = "%useSyncTokenService.name", description = "%useSyncTokenService.description")
+    boolean useSyncTokenService() default true;
 
 }
