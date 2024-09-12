@@ -63,17 +63,7 @@ import org.osgi.service.http.HttpService;
  * Local heartbeats are stored in the repository. Remote heartbeats are POSTs to
  * remote TopologyConnectorServlets.
  */
-@Component(service = {HeartbeatHandler.class},
-        reference = {
-                @Reference(name = "HttpService",
-                        service = HttpService.class,
-                        cardinality = ReferenceCardinality.MULTIPLE,
-                        policy = ReferencePolicy.DYNAMIC,
-                        bind = "bindHttpService",
-                        unbind = "unbindHttpService"
-                )
-        }
-)
+@Component(service = {HeartbeatHandler.class})
 public class HeartbeatHandler extends BaseViewChecker {
 
     private static final String PROPERTY_ID_LAST_HEARTBEAT = "lastHeartbeat";
@@ -191,6 +181,15 @@ public class HeartbeatHandler extends BaseViewChecker {
         lastHeartbeatWritten = null;
 
         logger.info("doActivate: activated with runtimeId: {}, slingId: {}", runtimeId, slingId);
+    }
+
+    @Reference(name = "HttpService",
+            service = HttpService.class,
+            cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC)
+    @Override
+    protected void bindHttpService(ServiceReference reference) {
+        super.bindHttpService(reference);
     }
 
     @Override

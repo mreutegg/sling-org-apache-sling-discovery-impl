@@ -220,7 +220,7 @@ public class Config implements BaseConfig, DiscoveryLiteConfig {
         backoffStandbyFactor = config.backoffStandbyFactor();
         backoffStableFactor = config.backoffStableFactor();
         
-        useSyncTokenService = config.useSyncTokenServiceEnabled();
+        useSyncTokenService = config.useSyncTokenService();
     }
 
     /**
