@@ -149,12 +149,11 @@ public class ClusterViewChangeListener {
                 handleTopologyChanged();
             }
         }
-    }
 
-    /** Inform the DiscoveryServiceImpl that the topology (might) have changed **/
-    private void handleTopologyChanged() {
-        logger.debug("handleTopologyChanged: detected a change in the established views, invoking checkForTopologyChange.");
-        discoveryService.checkForTopologyChange();
+        /** Inform the DiscoveryServiceImpl that the topology (might) have changed **/
+        private void handleTopologyChanged() {
+            logger.debug("handleTopologyChanged: detected a change in the established views, invoking checkForTopologyChange.");
+            discoveryService.checkForTopologyChange();
+        }
     }
-
 }
