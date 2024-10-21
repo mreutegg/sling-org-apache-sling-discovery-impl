@@ -29,14 +29,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.sling.api.SlingConstants;
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.PersistenceException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
+import org.apache.sling.api.resource.ResourceUtil;
 import org.apache.sling.api.resource.ValueMap;
+import org.apache.sling.api.resource.observation.ResourceChange;
+import org.apache.sling.api.resource.observation.ResourceChangeListener;
 import org.apache.sling.discovery.commons.providers.util.ResourceHelper;
 import org.apache.sling.discovery.impl.Config;
 import org.apache.sling.settings.SlingSettingsService;
@@ -48,20 +50,17 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventConstants;
-import org.osgi.service.event.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The osgi event handler responsible for following any votings and vote
+ * The resource change listener responsible for following any votings and vote
  * accordingly
  */
 @Component(immediate = true, service = {VotingHandler.class})
-public class VotingHandler implements EventHandler {
+public class VotingHandler implements ResourceChangeListener {
 
-    public static enum VotingDetail {
+    public enum VotingDetail {
         PROMOTED,
         WINNING,
         VOTED_YES,
@@ -77,10 +76,10 @@ public class VotingHandler implements EventHandler {
             if (o1 == o2) {
                 return 0;
             }
-            if (o1 == null && o2 != null) {
+            if (o1 == null) {
                 return 1;
             }
-            if (o2 == null && o1 != null) {
+            if (o2 == null) {
                 return -1;
             }
             // now both are non-null
@@ -114,7 +113,7 @@ public class VotingHandler implements EventHandler {
 
     private ComponentContext context;
 
-    private ServiceRegistration eventHandlerRegistration;
+    private ServiceRegistration<?> eventHandlerRegistration;
 
     /** for testing only **/
     public static VotingHandler testConstructor(SlingSettingsService settingsService,
@@ -145,74 +144,68 @@ public class VotingHandler implements EventHandler {
         this.context = context;
         activated = true;
 
-        // once activated, register the eventHandler so that we can
+        // once activated, register the listener so that we can
         // start receiving and processing votings...
-        registerEventHandler();
+        registerChangeListener();
         logger.info("activated: activated ("+slingId+")");
     }
 
-    private void registerEventHandler() {
+    private void registerChangeListener() {
         BundleContext bundleContext = context == null ? null : context.getBundleContext();
         if (bundleContext == null) {
-            logger.info("registerEventHandler: context or bundleContext is null - cannot register");
+            logger.info("registerChangeListener: context or bundleContext is null - cannot register");
             return;
         }
-        Dictionary<String,Object> properties = new Hashtable<String,Object>();
-        properties.put(Constants.SERVICE_DESCRIPTION, "Voting Event Listener");
-        String[] topics = new String[] {
-                SlingConstants.TOPIC_RESOURCE_ADDED,
-                SlingConstants.TOPIC_RESOURCE_CHANGED,
-                SlingConstants.TOPIC_RESOURCE_REMOVED };
-        properties.put(EventConstants.EVENT_TOPIC, topics);
+        Dictionary<String,Object> properties = new Hashtable<>();
+        properties.put(Constants.SERVICE_DESCRIPTION, "Voting Change Listener");
         String path = config.getDiscoveryResourcePath();
         if (path.endsWith("/")) {
             path = path.substring(0, path.length()-1);
         }
-        path = path + "/*";
-        properties.put(EventConstants.EVENT_FILTER, "(&(path="+path+"))");
+        properties.put(ResourceChangeListener.PATHS, new String[] {path});
         eventHandlerRegistration = bundleContext.registerService(
-                EventHandler.class.getName(), this, properties);
-        logger.info("registerEventHandler: VotingHandler registered as EventHandler");
+                ResourceChangeListener.class.getName(), this, properties);
+        logger.info("registerChangeListener: VotingHandler registered as ResourceChangeListener");
     }
 
     /**
      * handle repository changes and react to ongoing votings
      */
     @Override
-    public void handleEvent(final Event event) {
+    public void onChange(final List<ResourceChange> changes) {
+        changes.forEach(this::onChange);
+    }
+
+    private void onChange(final ResourceChange change) {
         if (!activated) {
             return;
         }
-        String resourcePath = (String) event.getProperty("path");
+        String resourcePath = change.getPath();
         String ongoingVotingsPath = config.getOngoingVotingsPath();
 
-        if (resourcePath == null) {
-            // not of my business
-            return;
-        }
         if (!resourcePath.startsWith(ongoingVotingsPath)) {
             // not of my business
             return;
         }
 
-        ResourceResolver resourceResolver = null;
+        ResourceResolver resourceResolver;
         try {
             resourceResolver = resolverFactory
                     .getServiceResourceResolver(null);
         } catch (LoginException e) {
             logger.error(
-                    "handleEvent: could not log in administratively: " + e, e);
+                    "handleEvent: could not log in administratively: {}", e, e);
             return;
         }
         try {
             if (logger.isDebugEnabled()) {
-                logger.debug("handleEvent: path = "+resourcePath+", event = "+event);
+                logger.debug("handleEvent: path = {}, change = {}", resourcePath, change);
             }
             analyzeVotings(resourceResolver);
         } catch (PersistenceException e) {
             logger.error(
-                    "handleEvent: got a PersistenceException during votings analysis: "
-                            + e, e);
+                    "handleEvent: got a PersistenceException during votings analysis: {}",
+                    e, e);
         } finally {
             if (resourceResolver != null) {
                 resourceResolver.close();
@@ -490,7 +483,8 @@ public class VotingHandler implements EventHandler {
 
         // step 5: make sure there are no duplicate ongoingVotings nodes
         // created. if so, cleanup
-        final Iterator<Resource> it5 = ongoingVotingsResource.getParent()
+        final Iterator<Resource> it5 = resourceResolver.getResource(
+                        ResourceUtil.getParent(ongoingVotingsResource.getPath()))
                 .getChildren().iterator();
         while (it5.hasNext()) {
             Resource resource = it5.next();

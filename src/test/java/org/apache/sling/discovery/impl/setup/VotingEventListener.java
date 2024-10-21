@@ -18,8 +18,7 @@
  */
 package org.apache.sling.discovery.impl.setup;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.jcr.RepositoryException;
@@ -27,7 +26,8 @@ import javax.jcr.observation.Event;
 import javax.jcr.observation.EventIterator;
 import javax.jcr.observation.EventListener;
 
-import org.apache.sling.api.SlingConstants;
+import org.apache.sling.api.resource.observation.ResourceChange;
+import org.apache.sling.api.resource.observation.ResourceChange.ChangeType;
 import org.apache.sling.discovery.base.its.setup.VirtualInstance;
 import org.apache.sling.discovery.impl.cluster.voting.VotingHandler;
 import org.slf4j.Logger;
@@ -41,34 +41,27 @@ class VotingEventListener implements EventListener {
      * 
      */
     private final VirtualInstance instance;
-    private final VotingHandler votingHandler;
     volatile boolean stopped = false;
     private final String slingId;
-    private ConcurrentLinkedQueue<org.osgi.service.event.Event> q = new ConcurrentLinkedQueue<org.osgi.service.event.Event>();
+    private final ConcurrentLinkedQueue<ResourceChange> q = new ConcurrentLinkedQueue<>();
     
     public VotingEventListener(VirtualInstance instance, final VotingHandler votingHandler, final String slingId) {
         this.instance = instance;
-        this.votingHandler = votingHandler;
         this.slingId = slingId;
-        Thread th = new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                while(!stopped) {
-                    try{
-                        org.osgi.service.event.Event ev = q.poll();
-                        if (ev==null) {
-                            Thread.sleep(10);
-                            continue;
-                        }
-                        logger.debug("async.run: delivering event to listener: "+slingId+", stopped: "+stopped+", event: "+ev);
-                        votingHandler.handleEvent(ev);
-                    } catch(Exception e) {
-                        logger.error("async.run: got Exception: "+e, e);
+        Thread th = new Thread(() -> {
+            while(!stopped) {
+                try{
+                    ResourceChange c = q.poll();
+                    if (c == null) {
+                        Thread.sleep(10);
+                        continue;
                     }
+                    logger.debug("async.run: delivering event to listener: "+slingId+", stopped: "+stopped+", change: "+c);
+                    votingHandler.onChange(Collections.singletonList(c));
+                } catch(Exception e) {
+                    logger.error("async.run: got Exception: "+e, e);
                 }
             }
-            
         });
         th.setName("VotingEventListener-"+instance.getDebugName());
         th.setDaemon(true);
@@ -88,23 +81,20 @@ class VotingEventListener implements EventListener {
         try {
             while (!stopped && events.hasNext()) {
                 Event event = events.nextEvent();
-                Map<String, String> properties = new HashMap<>();
-                String topic;
+                ChangeType type;
                 if (event.getType() == Event.NODE_ADDED) {
-                    topic = SlingConstants.TOPIC_RESOURCE_ADDED;
+                    type = ChangeType.ADDED;
                 } else if (event.getType() == Event.NODE_MOVED) {
-                    topic = SlingConstants.TOPIC_RESOURCE_CHANGED;
+                    type = ChangeType.CHANGED;
                 } else if (event.getType() == Event.NODE_REMOVED) {
-                    topic = SlingConstants.TOPIC_RESOURCE_REMOVED;
+                    type = ChangeType.REMOVED;
                 } else {
-                    topic = SlingConstants.TOPIC_RESOURCE_CHANGED;
+                    type = ChangeType.CHANGED;
                 }
                 try {
-                    properties.put("path", event.getPath());
-                    org.osgi.service.event.Event osgiEvent = new org.osgi.service.event.Event(
-                            topic, properties);
-                    logger.debug("onEvent: enqueuing event to listener: "+slingId+", stopped: "+stopped+", event: "+osgiEvent);
-                    q.add(osgiEvent);
+                    ResourceChange c = new ResourceChange(type, event.getPath(), false, null, null, null);
+                    logger.debug("onEvent: enqueuing event to listener: "+slingId+", stopped: "+stopped+", change: "+c);
+                    q.add(c);
                 } catch (RepositoryException e) {
                     logger.warn("RepositoryException: " + e, e);
                 }

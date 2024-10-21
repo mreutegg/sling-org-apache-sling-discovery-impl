@@ -20,9 +20,13 @@ package org.apache.sling.discovery.impl.cluster;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.List;
+import java.util.Set;
 
-import org.apache.sling.api.SlingConstants;
 import org.apache.sling.api.resource.ResourceResolverFactory;
+import org.apache.sling.api.resource.observation.ExternalResourceChangeListener;
+import org.apache.sling.api.resource.observation.ResourceChange;
+import org.apache.sling.api.resource.observation.ResourceChangeListener;
 import org.apache.sling.discovery.impl.Config;
 import org.apache.sling.discovery.impl.DiscoveryServiceImpl;
 import org.apache.sling.settings.SlingSettingsService;
@@ -34,18 +38,15 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventConstants;
-import org.osgi.service.event.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * osgi event handler which takes note when the established view changes in the
+ * Resource change listener which takes note when the established view changes in the
  * repository - or when an announcement changed in one of the instances
  */
 @Component(immediate = true)
-public class ClusterViewChangeListener implements EventHandler {
+public class ClusterViewChangeListener {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -66,7 +67,7 @@ public class ClusterViewChangeListener implements EventHandler {
 
     private ComponentContext context;
 
-    private ServiceRegistration eventHandlerRegistration;
+    private ServiceRegistration<?> eventHandlerRegistration;
 
     @Activate
     protected void activate(final ComponentContext context) {
@@ -87,86 +88,72 @@ public class ClusterViewChangeListener implements EventHandler {
         }
         Dictionary<String,Object> properties = new Hashtable<String,Object>();
         properties.put(Constants.SERVICE_DESCRIPTION, "Cluster View Change Listener");
-        String[] topics = new String[] {
-                SlingConstants.TOPIC_RESOURCE_ADDED,
-                SlingConstants.TOPIC_RESOURCE_CHANGED,
-                SlingConstants.TOPIC_RESOURCE_REMOVED };
-        properties.put(EventConstants.EVENT_TOPIC, topics);
         String path = config.getDiscoveryResourcePath();
         if (path.endsWith("/")) {
             path = path.substring(0, path.length()-1);
         }
-        path = path + "/*";
-        properties.put(EventConstants.EVENT_FILTER, "(&(path="+path+"))");
+        properties.put(ResourceChangeListener.PATHS, new String[] {path});
         eventHandlerRegistration = bundleContext.registerService(
-                EventHandler.class.getName(), this, properties);
-        logger.info("registerEventHandler: ClusterViewChangeHandler registered as EventHandler");
+                ResourceChangeListener.class.getName(), new Listener(), properties);
+        logger.info("registerEventHandler: ClusterViewChangeListener registered as ResourceChangeListener");
     }
 
     @Deactivate
     protected void deactivate() {
         if (eventHandlerRegistration != null) {
             eventHandlerRegistration.unregister();
-            logger.info("deactivate: ClusterViewChangeHandler unregistered as EventHandler");
+            logger.info("deactivate: ClusterViewChangeListener unregistered as ResourceChangeListener");
             eventHandlerRegistration = null;
         }
         logger.info("deactivate: deactivated slingId: {}, this: {}", slingId, this);
     }
 
-    /**
-     * Handle osgi events from the repository and take note when
-     * the established view, properties or announcements change - and
-     * inform the DiscoveryServiceImpl in those cases.
-     */
-    public void handleEvent(final Event event) {
-        final String resourcePath = (String) event.getProperty("path");
-        if (config==null) {
-            return;
-        }
-        final String establishedViewPath = config.getEstablishedViewPath();
-        final String clusterInstancesPath = config.getClusterInstancesPath();
-        if (resourcePath == null) {
-            // not of my business
-            return;
+    private final class Listener implements ResourceChangeListener, ExternalResourceChangeListener {
+
+        /**
+         * Handle resource change notifications and take note when
+         * the established view, properties or announcements change - and
+         * inform the DiscoveryServiceImpl in those cases.
+         */
+        @Override
+        public void onChange(List<ResourceChange> changes) {
+            changes.forEach(this::onChange);
         }
 
-        // properties: path, resourceChangedAttributes, resourceType,
-        // event.topics
-        if (resourcePath.startsWith(establishedViewPath)) {
-        	if (logger.isDebugEnabled()) {
-	            logger.debug("handleEvent: establishedViewPath resourcePath="
-	                    + resourcePath + ", event=" + event);
-        	}
-            handleTopologyChanged();
-        } else if (resourcePath.startsWith(clusterInstancesPath)) {
+        private void onChange(ResourceChange change) {
+            if (config==null) {
+                return;
+            }
+            final String establishedViewPath = config.getEstablishedViewPath();
+            final String clusterInstancesPath = config.getClusterInstancesPath();
+            final String resourcePath = change.getPath();
 
-            final Object resourceChangedAttributes = event
-                    .getProperty("resourceChangedAttributes");
-            if (resourceChangedAttributes != null
-                    && resourceChangedAttributes instanceof String[]) {
-                String[] resourceChangedAttributesStrings = (String[]) resourceChangedAttributes;
-                if (resourceChangedAttributesStrings.length == 1
-                        && resourceChangedAttributesStrings[0]
-                                .equals("lastHeartbeat")) {
+            if (resourcePath.startsWith(establishedViewPath)) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("onChange: establishedViewPath resourcePath={}, change={}",
+                            resourcePath, change);
+                }
+                handleTopologyChanged();
+            } else if (resourcePath.startsWith(clusterInstancesPath)) {
+                final Set<String> changedProperties = change.getChangedPropertyNames();
+                if (changedProperties != null
+                        && changedProperties.size() == 1
+                        && changedProperties.contains("lastHeartbeat")) {
                     // then ignore this one
                     return;
                 }
+                if (logger.isDebugEnabled()) {
+                    logger.debug("onChange: clusterInstancesPath (announcement or properties) resourcePath={}, change={}",
+                            resourcePath, change);
+                }
+                handleTopologyChanged();
             }
-        	if (logger.isDebugEnabled()) {
-	            logger.debug("handleEvent: clusterInstancesPath (announcement or properties) resourcePath="
-	                    + resourcePath + ", event=" + event);
-        	}
-            handleTopologyChanged();
-        } else {
-            // not of my business
-            return;
         }
-
     }
 
     /** Inform the DiscoveryServiceImpl that the topology (might) have changed **/
     private void handleTopologyChanged() {
-        logger.info("handleTopologyChanged: detected a change in the established views, invoking checkForTopologyChange.");
+        logger.debug("handleTopologyChanged: detected a change in the established views, invoking checkForTopologyChange.");
         discoveryService.checkForTopologyChange();
     }
 
