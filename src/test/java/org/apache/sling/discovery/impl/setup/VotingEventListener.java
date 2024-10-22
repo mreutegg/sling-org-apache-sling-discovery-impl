@@ -56,7 +56,7 @@ class VotingEventListener implements EventListener {
                         Thread.sleep(10);
                         continue;
                     }
-                    logger.debug("async.run: delivering event to listener: "+slingId+", stopped: "+stopped+", change: "+c);
+                    logger.debug(String.format("async.run: delivering event to listener: %s, stopped: %s, change: %s", slingId, stopped, c));
                     votingHandler.onChange(Collections.singletonList(c));
                 } catch(Exception e) {
                     logger.error("async.run: got Exception: "+e, e);
@@ -93,7 +93,7 @@ class VotingEventListener implements EventListener {
                 }
                 try {
                     ResourceChange c = new ResourceChange(type, event.getPath(), false, null, null, null);
-                    logger.debug("onEvent: enqueuing event to listener: "+slingId+", stopped: "+stopped+", change: "+c);
+                    logger.debug(String.format("onEvent: enqueuing event to listener: %s, stopped: %s, change: %s", slingId, stopped, c));
                     q.add(c);
                 } catch (RepositoryException e) {
                     logger.warn("RepositoryException: " + e, e);
