@@ -43,6 +43,8 @@
         <jackrabbit.version>2.20.16</jackrabbit.version>
         <!-- by default Slow tests are excluded - use -PincludeSlowTests to include them -->
         <sling.excluded.surefire.groups>org.apache.sling.commons.testing.junit.categories.Slow</sling.excluded.surefire.groups>
+        <surefireMemory>-Xmx2048m</surefireMemory>
+        <surefireArgLine>${surefireMemory}</surefireArgLine>
     </properties>
 
     <build>
@@ -52,7 +54,7 @@
                  <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>false</redirectTestOutputToFile>
-                    <argLine>-Xmx2048m ${jacoco.ut.command}</argLine>
+                    <argLine>${surefireArgLine}</argLine>
                     <excludedGroups>${sling.excluded.surefire.groups}</excludedGroups>
                 </configuration>
             </plugin>
@@ -66,6 +68,12 @@
             <id>includeSlowTests</id>
             <properties>
                 <sling.excluded.surefire.groups />
+            </properties>
+        </profile>
+        <profile>
+            <id>jacoco-report</id>
+            <properties>
+                <surefireArgLine>${surefireMemory} ${jacoco.ut.command}</surefireArgLine>
             </properties>
         </profile>
     </profiles>
